@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     tools {
-        jdk 'openjdk-17' // Ensure this tool is configured in Jenkins Global Tool Configuration
+        jdk 'jdk-17' // Ensure this tool is configured in Jenkins Global Tool Configuration
+        gradle 'gradle-814'
     }
 
     environment {
@@ -20,14 +21,14 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the application...'
-                sh './gradlew clean compileJava'
+                sh 'gradle clean compileJava'
             }
         }
 
         stage('Test') {
             steps {
                 echo 'Running unit tests...'
-                sh './gradlew test'
+                sh 'gradle test'
             }
             post {
                 always {
@@ -43,7 +44,7 @@ pipeline {
         stage('Package') {
             steps {
                 echo 'Packaging the application into a JAR...'
-                sh './gradlew bootJar'
+                sh 'gradle bootJar'
             }
             post {
                 success {
