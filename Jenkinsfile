@@ -90,7 +90,7 @@ pipeline {
 
         stage('Approval'){
             steps {
-                imput message: 'Approve deloyment to Production?', ok: 'Deploy'
+                input message: 'Approve deloyment to Production?', ok: 'Deploy'
             }
         }
 
