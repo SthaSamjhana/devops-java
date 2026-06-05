@@ -62,15 +62,13 @@ pipeline {
                 // sh "docker build -t ${APP_NAME}:${BUILD_NUMBER} ."
                 // sh "docker run -d -p 8080:8080 ${APP_NAME}:${BUILD_NUMBER}"
                 script {
-                    withCredentials()[sshUserPrivateKey(
+                    withCredentials([sshUserPrivateKey(
                     credentialsId: 'app-server-ssh',     // ← Your credential ID
                     keyFileVariable: 'SSH_KEY'
                 )]) {
                     sh """
                         echo "copying new jar to the server"
                         scp -i \$SSH_KEY -o StrictHostKeyChecking=no build/libs/${JAR_NAME} ubuntu@${APP_SERVER}:~/calculator.jar.new
-                    """
-                    sh '''
                         echo "replacning the old jar and restarting the service..."
                         ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@${APP_SERVER} "
                         if [ -f calculator.jar ]; then
@@ -84,7 +82,7 @@ pipeline {
                         echo 'Service Status:'
                         sudo systemctl status my-java-app.service --no-pager -l
                     "
-                '''
+                """
                 }
                 }
                 echo 'Deployment successful (placeholder).'
