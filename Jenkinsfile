@@ -9,6 +9,7 @@ pipeline {
     environment {
         APP_NAME = 'calculator'
         JAR_NAME = "calculator-1.0.0.jar"
+        APP_SERVER = "54.80.78.13"
     }
 
     stages {
@@ -60,7 +61,28 @@ pipeline {
                 // Example for Docker:
                 // sh "docker build -t ${APP_NAME}:${BUILD_NUMBER} ."
                 // sh "docker run -d -p 8080:8080 ${APP_NAME}:${BUILD_NUMBER}"
-                sh 'scp build/libs/${JAR_NAME} ubuntu@13.221.122.187:~/'
+                script {
+                    sshagent(credentials: ['app-server-ssh'])
+                    sh """
+                        echo "copying new jar to the server"
+                        scp -o StrictHostKeyChecking=no build/libs/${JAR_NAME} ubuntu@${APP_SERVER}:~/calculator.jar.new
+                    """
+                    sh '''
+                        echo "replacning the old jar and restarting the service..."
+                        ssh -o StrictHostKeyChecking=no ubuntu@${APP_SERVER} "
+                        if [ -f calculator.jar ]; then
+                            cp calculator.jar calculator.jar.bak
+                        fi
+
+                        mv calculator.jar.new calculator.jar
+
+                        sudo systemctl restart calculator.service
+                        echo '✅ Deployment completed and service restarted'
+                        echo 'Service Status:'
+                        sudo systemctl status my-java-app.service --no-pager -l
+                    "
+                '''
+                }
                 echo 'Deployment successful (placeholder).'
             }
         }
