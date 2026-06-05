@@ -62,7 +62,10 @@ pipeline {
                 // sh "docker build -t ${APP_NAME}:${BUILD_NUMBER} ."
                 // sh "docker run -d -p 8080:8080 ${APP_NAME}:${BUILD_NUMBER}"
                 script {
-                    sshagent(credentials: ['app-server-ssh'])
+                    withCredentials()[sshUserPrivateKey(
+                    credentialsId: 'app-server-ssh',     // ← Your credential ID
+                    keyFileVariable: 'SSH_KEY'
+                )]){
                     sh """
                         echo "copying new jar to the server"
                         scp -o StrictHostKeyChecking=no build/libs/${JAR_NAME} ubuntu@${APP_SERVER}:~/calculator.jar.new
@@ -82,6 +85,7 @@ pipeline {
                         sudo systemctl status my-java-app.service --no-pager -l
                     "
                 '''
+                }
                 }
                 echo 'Deployment successful (placeholder).'
             }
