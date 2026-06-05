@@ -42,6 +42,40 @@ pipeline {
             }
         }
 
+        stage('Security & code analysis'){
+            parallel {
+                stage('OWASP Dependency check'){
+                    steps {
+                        echo 'Scanning third-party dependencies'
+                        sh 'sleep 30'
+                    }
+                    post {
+                        always {
+                            ech 'Updating third party dependencies report'
+                        }
+                    }
+                }
+                stage('SonarQube Analysis'){
+                    steps {
+                        echo 'analyzing code quality'
+                        sh 'sleep 90'
+                    }
+                }
+            }
+        }
+
+        stage("SonarQube Quality Gate"){
+            steps{
+                timeout(time: 5, unit: 'MINUTES') {
+                    script{
+                        sh """
+                            sleep 30
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Package') {
             steps {
                 echo 'Packaging the application into a JAR...'
@@ -51,6 +85,12 @@ pipeline {
                 success {
                     archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
                 }
+            }
+        }
+
+        stage('Approval'){
+            steps {
+                imput message: 'Approve deloyment to Production?', ok: 'Deploy'
             }
         }
 
