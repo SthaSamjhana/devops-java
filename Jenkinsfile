@@ -120,7 +120,7 @@ pipeline {
                         echo '✅ Deployment completed and service restarted'
                         echo 'Service Status:'
                         sudo systemctl status calculator.service --no-pager -l
-                    
+                    "
                 """
                 }
                 }
