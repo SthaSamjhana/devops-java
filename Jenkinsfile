@@ -2,17 +2,18 @@ pipeline {
     agent any
 
     tools {
-        jdk 'jdk-17' // Ensure this tool is configured in Jenkins Global Tool Configuration
+        jdk 'jdk-17'
         gradle 'gradle-814'
     }
 
     environment {
-        APP_NAME = 'calculator'
-        JAR_NAME = "calculator-1.0.0.jar"
-        APP_SERVER = "3.87.91.135"
+        APP_NAME   = 'calculator'
+        JAR_NAME   = 'calculator-1.0.0.jar'
+        APP_SERVER = '3.87.91.135'
     }
 
     stages {
+
         stage('Build') {
             steps {
                 echo 'Building the application...'
@@ -28,45 +29,27 @@ pipeline {
             post {
                 always {
                     junit 'build/test-results/test/*.xml'
-                    // jacoco execPattern: 'build/jacoco/test.exec',
-                    //        classPattern: 'build/classes/java/main',
-                    //        sourcePattern: 'src/main/java',
-                    //        inclusionPattern: '**/*.class'
                 }
             }
         }
 
-        stage('Security & code analysis'){
+        stage('Security & Code Analysis') {
             parallel {
-                // stage('OWASP Dependency check'){
-                //     steps {
-                //         echo 'Scanning third-party dependencies'
-                //         sh 'sleep 30'
-                //         dependencyCheck additionalArguments: '--scan "./" --format "ALL"', odcInstallation: 'OWASP-SCA'
-                //     }
-                //     post {
-                //         always {
-                //             echo 'Updating third party dependencies report'
-                //             dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-                //         }
-                //     }
-                // }
-                stage('SonarQube Analysis'){
+
+                stage('SonarQube Analysis') {
                     steps {
-                        echo 'analyzing code quality'
-                        //sh 'sleep 90'
+                        echo 'Analyzing code quality...'
                     }
                 }
+
             }
         }
 
-        stage("SonarQube Quality Gate"){
-            steps{
+        stage('SonarQube Quality Gate') {
+            steps {
                 timeout(time: 5, unit: 'MINUTES') {
-                    script{
-                     //   sh """
-                       //     sleep 30
-                      //  """
+                    script {
+                        echo 'Quality Gate Check'
                     }
                 }
             }
@@ -74,8 +57,9 @@ pipeline {
 
         stage('Package') {
             steps {
-                echo 'Packaging the application into a JAR...'
+                echo 'Packaging application...'
                 sh 'gradle bootJar'
+                sh 'ls -l build/libs/'
             }
             post {
                 success {
@@ -84,60 +68,73 @@ pipeline {
             }
         }
 
-        stage('Approval'){
-            options{
-                timeout(time: 3, unit: 'MINUTES') 
+        stage('Approval') {
+            options {
+                timeout(time: 3, unit: 'MINUTES')
             }
             steps {
-                input message: 'Approve deloyment to Production?', ok: 'Deploy'
+                input message: 'Approve deployment to Production?', ok: 'Deploy'
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deploying to the target environment...'
-                // Example: sh 'scp build/libs/${JAR_NAME} user@server:/path/to/deploy'
-                // Example for Docker:
-                // sh "docker build -t ${APP_NAME}:${BUILD_NUMBER} ."
-                // sh "docker run -d -p 8080:8080 ${APP_NAME}:${BUILD_NUMBER}"
                 script {
-                    withCredentials([sshUserPrivateKey(
-                    credentialsId: 'app-server-ssh',     // ← Your credential ID
-                    keyFileVariable: 'SSH_KEY'
-                )]) {
-                    sh """
-                        echo "copying new jar to the server ${APP_SERVER}"
-                        scp -i \$SSH_KEY -o StrictHostKeyChecking=no build/libs/${JAR_NAME} ubuntu@${APP_SERVER}:~/calculator.jar.new
-                        echo "replacing the old jar and restarting the service..."
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@${APP_SERVER} "
-                        if [ -f calculator.jar ]; then
-                            cp calculator.jar calculator.jar.bak
-                        fi
 
-                        mv calculator.jar.new calculator.jar
+                    withCredentials([
+                        sshUserPrivateKey(
+                            credentialsId: 'app-server-ssh',
+                            keyFileVariable: 'SSH_KEY'
+                        )
+                    ]) {
 
-                        sudo systemctl restart calculator.service
-                        echo '✅ Deployment completed and service restarted'
-                        echo 'Service Status:'
-                        sudo systemctl status calculator.service --no-pager -l
-                    "
-                """
+                        sh """
+                            echo "Copying JAR to server..."
+
+                            scp -i \$SSH_KEY \
+                            -o StrictHostKeyChecking=no \
+                            build/libs/${JAR_NAME} \
+                            ubuntu@${APP_SERVER}:~/calculator.jar.new
+
+                            echo "Restarting application..."
+
+                            ssh -i \$SSH_KEY \
+                            -o StrictHostKeyChecking=no \
+                            ubuntu@${APP_SERVER} << 'EOF'
+
+                            if [ -f ~/calculator.jar ]; then
+                                cp ~/calculator.jar ~/calculator.jar.bak
+                            fi
+
+                            mv ~/calculator.jar.new ~/calculator.jar
+
+                            sudo systemctl restart calculator.service
+
+                            echo "Deployment completed"
+
+                            echo "Service Status:"
+                            sudo systemctl status calculator.service --no-pager -l
+
+EOF
+                        """
+                    }
                 }
-                }
-                echo 'Deployment successful (placeholder).'
             }
         }
     }
 
     post {
+
         always {
             echo 'Pipeline finished execution.'
         }
+
         success {
-            echo 'Build, Test, Package, and Deploy stages completed successfully!'
+            echo 'Build, Test, Package and Deploy completed successfully!'
         }
+
         failure {
-            echo 'Pipeline failed. Please check the logs for more information.'
+            echo 'Pipeline failed. Check Jenkins logs for details.'
         }
     }
 }
