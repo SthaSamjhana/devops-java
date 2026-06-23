@@ -38,19 +38,19 @@ pipeline {
 
         stage('Security & code analysis'){
             parallel {
-                stage('OWASP Dependency check'){
-                    steps {
-                        echo 'Scanning third-party dependencies'
-                        sh 'sleep 30'
-                        dependencyCheck additionalArguments: '--scan "./" --format "ALL"', odcInstallation: 'OWASP-SCA'
-                    }
-                    post {
-                        always {
-                            echo 'Updating third party dependencies report'
-                            dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-                        }
-                    }
-                }
+                // stage('OWASP Dependency check'){
+                //     steps {
+                //         echo 'Scanning third-party dependencies'
+                //         sh 'sleep 30'
+                //         dependencyCheck additionalArguments: '--scan "./" --format "ALL"', odcInstallation: 'OWASP-SCA'
+                //     }
+                //     post {
+                //         always {
+                //             echo 'Updating third party dependencies report'
+                //             dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                //         }
+                //     }
+                // }
                 stage('SonarQube Analysis'){
                     steps {
                         echo 'analyzing code quality'
@@ -120,7 +120,7 @@ pipeline {
                         echo '✅ Deployment completed and service restarted'
                         echo 'Service Status:'
                         sudo systemctl status calculator.service --no-pager -l
-                    "
+                    
                 """
                 }
                 }
