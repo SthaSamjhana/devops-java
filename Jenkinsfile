@@ -54,7 +54,7 @@ pipeline {
                 stage('SonarQube Analysis'){
                     steps {
                         echo 'analyzing code quality'
-                        sh 'sleep 90'
+                        //sh 'sleep 90'
                     }
                 }
             }
@@ -64,9 +64,9 @@ pipeline {
             steps{
                 timeout(time: 5, unit: 'MINUTES') {
                     script{
-                        sh """
-                            sleep 30
-                        """
+                     //   sh """
+                       //     sleep 30
+                      //  """
                     }
                 }
             }
